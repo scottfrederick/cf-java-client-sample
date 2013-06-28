@@ -27,6 +27,8 @@ jar {
         attributes 'Implementation-Title': 'Sample application', 'Implementation-Version': version
         attributes 'Main-Class': 'org.cloudfoundry.sample.JavaSample'
     }
+
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 }
 
 dependencies {

@@ -16,9 +16,18 @@ import java.util.Map;
 
 public class JavaSample {
     public static void main(String[] args) {
-        String target = args[0];
+        Targets targets = getTargetInfo();
+        String target;
 
-        String token = getToken(target);
+        if (args.length > 0) {
+            target = args[0];
+        } else {
+            target = targets.keySet().iterator().next();
+        }
+
+        System.out.println("Connecting to Cloud Foundry target: " + target);
+
+        String token = getToken(targets, target);
 
         CloudCredentials credentials = new CloudCredentials(token);
         CloudFoundryClient client = new CloudFoundryClient(credentials, getTargetURL(target));
@@ -51,14 +60,16 @@ public class JavaSample {
         }
     }
 
-    private static String getToken(String targetUrl) {
-        File tokensFile = getTokensFile(targetUrl);
-        Targets targets = getTokensFromFile(tokensFile);
+    private static Targets getTargetInfo() {
+        File tokensFile = getTokensFile();
+        return getTokensFromFile(tokensFile);
+    }
 
+    private static String getToken(Targets targets, String targetUrl) {
         Map<String, String> target = targets.get(targetUrl);
 
         if (target == null) {
-            error("No tokens found in the file " + tokensFile.getPath() + " for the target " + targetUrl);
+            error("No tokens found in the tokens file for the target " + targetUrl);
         }
 
         String tokenString = target.get(":token");
@@ -67,13 +78,13 @@ public class JavaSample {
         return tokens[1];
     }
 
-    private static File getTokensFile(String target) {
+    private static File getTokensFile() {
         String tokensFilePath = System.getProperty("user.home") + "/.cf/tokens.yml";
         File tokensFile = new File(tokensFilePath);
 
         if (!tokensFile.exists() && !tokensFile.canRead()) {
             error("The Cloud Foundry tokens file " + tokensFile.getPath() + " does not exist or cannot be read. " +
-                    "Use the 'cf' command line tool to target and log into the " + target + "before running this program.");
+                  "Use the 'cf' command line tool to target and log into a Cloud Foundry service before running this program.");
         }
 
         return tokensFile;
