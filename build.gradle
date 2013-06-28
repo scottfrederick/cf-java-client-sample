@@ -34,3 +34,7 @@ dependencies {
     compile 'com.esotericsoftware.yamlbeans:yamlbeans:1.06'
     compile 'org.apache.commons:commons-lang3:3.1'
 }
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.6'
+}
