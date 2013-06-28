@@ -1,0 +1,36 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+sourceCompatibility = 1.6
+version = '1.0'
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+        resources {
+            srcDir 'src/main/resources'
+            srcDir 'src/main/java'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    mavenRepo url:'http://repo.springframework.org/milestone/'
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'Sample application', 'Implementation-Version': version
+        attributes 'Main-Class': 'org.cloudfoundry.sample.JavaSample'
+    }
+}
+
+dependencies {
+    compile 'org.cloudfoundry:cloudfoundry-client-lib:0.8.4.BUILD-SNAPSHOT'
+    compile 'com.esotericsoftware.yamlbeans:yamlbeans:1.06'
+    compile 'org.apache.commons:commons-lang3:3.1'
+}
