@@ -4,17 +4,6 @@ Java Cloud Foundry Client Sample
 This is a small Java sample application showing how to use the Cloud Foundry client runtime library to connect to and
 interact with a Cloud Foundry instance.
 
-This application currently requires a version of the Cloud Foundry client library built from source.
-
-~~~
-$ git clone https://github.com/cloudfoundry/vcap-java-client.git
-$ cd vcap-java-client/cloudfoundry-client-lib
-$ mvn install
-~~~
-
-This will build a snapshot version of `cloudfoundry-client-lib` and install it into your local Maven repository. Now
-you can build the sample application:
-
 ~~~
 $ git clone https://github.com/scottfrederick/cf-java-client
 $ cd cf-java-client
