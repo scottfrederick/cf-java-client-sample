@@ -32,7 +32,7 @@ jar {
 }
 
 dependencies {
-    compile 'org.cloudfoundry:cloudfoundry-client-lib:0.8.4'
+    compile 'org.cloudfoundry:cloudfoundry-client-lib:0.8.5'
     compile 'com.esotericsoftware.yamlbeans:yamlbeans:1.06'
     compile 'org.apache.commons:commons-lang3:3.1'
 }

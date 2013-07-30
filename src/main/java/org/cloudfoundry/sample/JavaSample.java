@@ -3,10 +3,7 @@ package org.cloudfoundry.sample;
 import com.esotericsoftware.yamlbeans.YamlReader;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.CloudSpace;
-import org.cloudfoundry.client.lib.domain.ServiceConfiguration;
+import org.cloudfoundry.client.lib.domain.*;
 
 import java.io.File;
 import java.io.FileReader;
@@ -16,23 +13,35 @@ import java.util.Map;
 
 public class JavaSample {
     public static void main(String[] args) {
-        Targets targets = getTargetInfo();
+        CloudCredentials credentials;
         String target;
 
         if (args.length > 0) {
             target = args[0];
         } else {
+            Targets targets = getTargetInfo();
             target = targets.keySet().iterator().next();
+        }
+
+        if (args.length > 1) {
+            String username = args[1];
+            String password = args[2];
+            credentials = new CloudCredentials(username, password);
+        } else {
+            Targets targets = getTargetInfo();
+            String token = getToken(targets, target);
+            credentials = new CloudCredentials(token);
         }
 
         System.out.println("Connecting to Cloud Foundry target: " + target);
 
-        String token = getToken(targets, target);
-
-        CloudCredentials credentials = new CloudCredentials(token);
         CloudFoundryClient client = new CloudFoundryClient(credentials, getTargetURL(target));
 
-        System.out.println("\nInfo");
+        if (args.length > 1) {
+            client.login();
+        }
+
+        System.out.println("\nInfo:");
         System.out.println(client.getCloudInfo().getName());
         System.out.println(client.getCloudInfo().getVersion());
         System.out.println(client.getCloudInfo().getDescription());
