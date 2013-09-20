@@ -1,57 +1,129 @@
 package org.cloudfoundry.sample;
 
-import com.esotericsoftware.yamlbeans.YamlReader;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.cloudfoundry.client.lib.domain.*;
+import org.cloudfoundry.client.lib.tokens.TokensFile;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.common.DefaultOAuth2RefreshToken;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
-import java.io.File;
-import java.io.FileReader;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Map;
 
 public class JavaSample {
+    @Parameter(names = { "-t", "--trace" }, description = "Cloud Foundry target URL", required = true)
+    private String target;
+
+    @Parameter(names = { "-s", "--space" }, description = "Cloud Foundry space to target", required = true)
+    private String spaceName;
+
+    @Parameter(names = { "-o", "--organization" }, description = "Cloud Foundry organization to target")
+    private String orgName;
+
+    @Parameter(names = { "-u", "--username" }, description = "Username for login")
+    private String username;
+
+    @Parameter(names = { "-p", "--password" }, description = "Password for login")
+    private String password;
+
+    @Parameter(names = { "-a", "--accessToken" }, description = "OAuth access token")
+    private String accessToken;
+
+    @Parameter(names = { "-r", "--refreshToken" }, description = "OAuth access token")
+    private String refreshToken;
+
+    @Parameter(names = { "-c", "--client" }, description = "OAuth client ID")
+    private String clientID;
+
     public static void main(String[] args) {
+        JavaSample sample = new JavaSample();
+        new JCommander(sample, args);
+        sample.run();
+    }
+
+    private void run() {
+        validateArgs();
+
+        CloudCredentials credentials = getCloudCredentials();
+        CloudFoundryClient client = getCloudFoundryClient(credentials);
+
+        displayCloudInfo(client);
+    }
+
+    private CloudCredentials getCloudCredentials() {
         CloudCredentials credentials;
-        String target;
 
-        if (args.length > 0) {
-            target = args[0];
+        if (username != null && password != null) {
+            if (clientID == null) {
+                credentials = new CloudCredentials(username, password);
+            } else {
+                credentials = new CloudCredentials(username, password, clientID);
+            }
+        } else if (accessToken != null && refreshToken != null) {
+            DefaultOAuth2RefreshToken refresh = new DefaultOAuth2RefreshToken(refreshToken);
+            DefaultOAuth2AccessToken access = new DefaultOAuth2AccessToken(accessToken);
+            access.setRefreshToken(refresh);
+
+            if (clientID == null) {
+                credentials = new CloudCredentials(access);
+            } else {
+                credentials = new CloudCredentials(access, clientID);
+            }
         } else {
-            Targets targets = getTargetInfo();
-            target = targets.keySet().iterator().next();
+            final TokensFile tokensFile = new TokensFile();
+            final OAuth2AccessToken token = tokensFile.retrieveToken(getTargetURI(target));
+
+            if (clientID == null) {
+                credentials = new CloudCredentials(token);
+            } else {
+                credentials = new CloudCredentials(token, clientID);
+            }
         }
 
-        if (args.length > 1) {
-            String username = args[1];
-            String password = args[2];
-            credentials = new CloudCredentials(username, password);
-        } else {
-            Targets targets = getTargetInfo();
-            String token = getToken(targets, target);
-            credentials = new CloudCredentials(new DefaultOAuth2AccessToken(token));
-        }
+        return credentials;
+    }
 
-        String orgName = null;
-        if (args.length > 3) {
-            orgName = args[3];
-        }
-
-        String spaceName = null;
-        if (args.length > 4) {
-            spaceName = args[4];
-        }
-
+    private CloudFoundryClient getCloudFoundryClient(CloudCredentials credentials) {
         out("Connecting to Cloud Foundry target: " + target);
 
         CloudFoundryClient client = new CloudFoundryClient(credentials, getTargetURL(target), orgName, spaceName);
 
-        if (args.length > 1) {
+        if (username != null) {
             client.login();
         }
 
+        return client;
+    }
+
+    private void validateArgs() {
+        if ((username != null || password != null) && (accessToken != null || refreshToken != null)) {
+            error("username/password and accessToken/refreshToken options can not be used together");
+        }
+
+        if (bothOrNeither(username, password)) {
+            error("username and password options must be provided together");
+        }
+
+        if (bothOrNeither(accessToken, refreshToken)) {
+            error("accessToken and refreshToken options must be provided together");
+        }
+    }
+
+    private boolean bothOrNeither(String first, String second) {
+        if (first != null || second != null) {
+            if (first == null || second == null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void displayCloudInfo(CloudFoundryClient client) {
         out("\nInfo:");
         out(client.getCloudInfo().getName());
         out(client.getCloudInfo().getVersion());
@@ -101,63 +173,31 @@ public class JavaSample {
         }
     }
 
-    private static Targets getTargetInfo() {
-        File tokensFile = getTokensFile();
-        return getTokensFromFile(tokensFile);
-    }
-
-    private static String getToken(Targets targets, String targetUrl) {
-        Map<String, String> target = targets.get(targetUrl);
-
-        if (target == null) {
-            error("No tokens found in the tokens file for the target " + targetUrl);
-        }
-
-        String tokenString = target.get(":token");
-        String[] tokens = tokenString.split(" ");
-
-        return tokens[1];
-    }
-
-    private static File getTokensFile() {
-        String tokensFilePath = System.getProperty("user.home") + "/.cf/tokens.yml";
-        File tokensFile = new File(tokensFilePath);
-
-        if (!tokensFile.exists() && !tokensFile.canRead()) {
-            error("The Cloud Foundry tokens file " + tokensFile.getPath() + " does not exist or cannot be read. " +
-                    "Use the 'cf' command line tool to target and log into a Cloud Foundry service before running this program.");
-        }
-
-        return tokensFile;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Targets getTokensFromFile(File tokensFile) {
+    private URL getTargetURL(String target) {
         try {
-            YamlReader reader = new YamlReader(new FileReader(tokensFile));
-            return reader.read(Targets.class);
-        } catch (Exception e) {
-            error("An error occurred reading the tokens file at " + tokensFile.getPath() + ":" + e.getMessage());
+            return getTargetURI(target).toURL();
+        } catch (MalformedURLException e) {
+            error("The target URL is not valid: " + e.getMessage());
         }
+
         return null;
     }
 
-    private static URL getTargetURL(String target) {
+    private URI getTargetURI(String target) {
         try {
-            return new URI(target).toURL();
-        } catch (Exception e) {
-            out("The target URL is not valid: " + e.getMessage());
+            return new URI(target);
+        } catch (URISyntaxException e) {
+            error("The target URL is not valid: " + e.getMessage());
         }
 
-        System.exit(1);
         return null;
     }
 
-    private static void out(String s) {
+    private void out(String s) {
         System.out.println(s);
     }
 
-    private static void error(String message) {
+    private void error(String message) {
         out(message);
         System.exit(1);
     }
