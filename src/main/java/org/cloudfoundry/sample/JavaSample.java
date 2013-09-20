@@ -4,6 +4,7 @@ import com.esotericsoftware.yamlbeans.YamlReader;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.cloudfoundry.client.lib.domain.*;
+import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 
 import java.io.File;
 import java.io.FileReader;
@@ -30,42 +31,73 @@ public class JavaSample {
         } else {
             Targets targets = getTargetInfo();
             String token = getToken(targets, target);
-            credentials = new CloudCredentials(token);
+            credentials = new CloudCredentials(new DefaultOAuth2AccessToken(token));
         }
 
-        System.out.println("Connecting to Cloud Foundry target: " + target);
+        String orgName = null;
+        if (args.length > 3) {
+            orgName = args[3];
+        }
 
-        CloudFoundryClient client = new CloudFoundryClient(credentials, getTargetURL(target));
+        String spaceName = null;
+        if (args.length > 4) {
+            spaceName = args[4];
+        }
+
+        out("Connecting to Cloud Foundry target: " + target);
+
+        CloudFoundryClient client = new CloudFoundryClient(credentials, getTargetURL(target), orgName, spaceName);
 
         if (args.length > 1) {
             client.login();
         }
 
-        System.out.println("\nInfo:");
-        System.out.println(client.getCloudInfo().getName());
-        System.out.println(client.getCloudInfo().getVersion());
-        System.out.println(client.getCloudInfo().getDescription());
+        out("\nInfo:");
+        out(client.getCloudInfo().getName());
+        out(client.getCloudInfo().getVersion());
+        out(client.getCloudInfo().getDescription());
 
-        System.out.println("\nSpaces:");
+        out("\nSpaces:");
         for (CloudSpace space : client.getSpaces()) {
-            System.out.println(space.getName() + ":" + space.getOrganization().getName());
+            out(space.getName() + ":" + space.getOrganization().getName());
         }
 
-        System.out.println("\nApplications:");
+        out("\nOrgs:");
+        for (CloudOrganization org : client.getOrganizations()) {
+            out(org.getName());
+        }
+
+        out("\nApplications:");
         for (CloudApplication app : client.getApplications()) {
-            System.out.println(app.getName());
+            out(app.getName() + ":");
+            out(app.getStaging().getBuildpackUrl());
+            out(app.getStaging().getCommand());
+            out("\tServices:");
+            for (String serviceName : app.getServices()) {
+                out("\t\t" + serviceName);
+            }
         }
 
-        System.out.println("\nServices:");
+        out("\nServices:");
         for (CloudService service : client.getServices()) {
-            System.out.println(service.getName() + ":" + service.getLabel());
+            out(service.getName() + ":");
+            out("\t" + service.getLabel());
+            out("\t" + service.getProvider());
+            out("\t" + service.getPlan());
+            out("\t" + service.getVersion());
         }
 
-        System.out.println("\nService Configurations:");
-        for (ServiceConfiguration config : client.getServiceConfigurations()) {
-            System.out.println(config.getCloudServiceOffering().getLabel() + ":" +
-                config.getCloudServiceOffering().getProvider() + ":" +
-                config.getCloudServiceOffering().getDescription());
+        out("\nService Offerings:");
+        for (CloudServiceOffering offering : client.getServiceOfferings()) {
+            out(offering.getLabel() + ":");
+            out("\t" + offering.getProvider());
+            final String s = "\tPlans:";
+            out(s);
+            for (CloudServicePlan plan : offering.getCloudServicePlans()) {
+                out("\t\t" + plan.getName());
+            }
+            out("\t" + offering.getVersion());
+            out("\t" + offering.getDescription());
         }
     }
 
@@ -93,7 +125,7 @@ public class JavaSample {
 
         if (!tokensFile.exists() && !tokensFile.canRead()) {
             error("The Cloud Foundry tokens file " + tokensFile.getPath() + " does not exist or cannot be read. " +
-                  "Use the 'cf' command line tool to target and log into a Cloud Foundry service before running this program.");
+                    "Use the 'cf' command line tool to target and log into a Cloud Foundry service before running this program.");
         }
 
         return tokensFile;
@@ -114,15 +146,19 @@ public class JavaSample {
         try {
             return new URI(target).toURL();
         } catch (Exception e) {
-            System.out.println("The target URL is not valid: " + e.getMessage());
+            out("The target URL is not valid: " + e.getMessage());
         }
 
         System.exit(1);
         return null;
     }
 
+    private static void out(String s) {
+        System.out.println(s);
+    }
+
     private static void error(String message) {
-        System.out.println(message);
+        out(message);
         System.exit(1);
     }
 }
