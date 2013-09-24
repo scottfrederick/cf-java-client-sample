@@ -37,8 +37,14 @@ public class JavaSample {
     @Parameter(names = { "-r", "--refreshToken" }, description = "OAuth access token")
     private String refreshToken;
 
-    @Parameter(names = { "-c", "--client" }, description = "OAuth client ID")
+    @Parameter(names = { "--clientID" }, description = "OAuth client ID")
     private String clientID;
+
+    @Parameter(names = { "--clientSecret" }, description = "OAuth client secret")
+    private String clientSecret;
+
+    @Parameter(names = { "-v", "--verbose" }, description = "Enable logging of requests and responses")
+    private boolean verbose;
 
     public static void main(String[] args) {
         JavaSample sample = new JavaSample();
@@ -62,7 +68,7 @@ public class JavaSample {
             if (clientID == null) {
                 credentials = new CloudCredentials(username, password);
             } else {
-                credentials = new CloudCredentials(username, password, clientID);
+                credentials = new CloudCredentials(username, password, clientID, clientSecret);
             }
         } else if (accessToken != null && refreshToken != null) {
             DefaultOAuth2RefreshToken refresh = new DefaultOAuth2RefreshToken(refreshToken);
@@ -72,7 +78,7 @@ public class JavaSample {
             if (clientID == null) {
                 credentials = new CloudCredentials(access);
             } else {
-                credentials = new CloudCredentials(access, clientID);
+                credentials = new CloudCredentials(access, clientID, clientSecret);
             }
         } else {
             final TokensFile tokensFile = new TokensFile();
@@ -81,7 +87,7 @@ public class JavaSample {
             if (clientID == null) {
                 credentials = new CloudCredentials(token);
             } else {
-                credentials = new CloudCredentials(token, clientID);
+                credentials = new CloudCredentials(token, clientID, clientSecret);
             }
         }
 
@@ -91,7 +97,11 @@ public class JavaSample {
     private CloudFoundryClient getCloudFoundryClient(CloudCredentials credentials) {
         out("Connecting to Cloud Foundry target: " + target);
 
-        CloudFoundryClient client = new CloudFoundryClient(credentials, getTargetURL(target), orgName, spaceName);
+        CloudFoundryClient client = new CloudFoundryClient(credentials, getTargetURL(target));
+
+        if (verbose) {
+            client.registerRestLogListener(new SampleRestLogCallback());
+        }
 
         if (username != null) {
             client.login();
@@ -105,16 +115,20 @@ public class JavaSample {
             error("username/password and accessToken/refreshToken options can not be used together");
         }
 
-        if (bothOrNeither(username, password)) {
-            error("username and password options must be provided together");
+        if (optionsNotPaired(username, password)) {
+            error("--username and --password options must be provided together");
         }
 
-        if (bothOrNeither(accessToken, refreshToken)) {
-            error("accessToken and refreshToken options must be provided together");
+        if (optionsNotPaired(accessToken, refreshToken)) {
+            error("--accessToken and --refreshToken options must be provided together");
+        }
+
+        if (optionsNotPaired(clientID, clientSecret)) {
+            error("--clientID and --clientSecret options must be provided together");
         }
     }
 
-    private boolean bothOrNeither(String first, String second) {
+    private boolean optionsNotPaired(String first, String second) {
         if (first != null || second != null) {
             if (first == null || second == null) {
                 return true;
