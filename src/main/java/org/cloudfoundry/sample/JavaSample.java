@@ -16,7 +16,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 public class JavaSample {
-    @Parameter(names = { "-t", "--trace" }, description = "Cloud Foundry target URL", required = true)
+
+    @Parameter(names = { "-t", "--target" }, description = "Cloud Foundry target URL", required = true)
     private String target;
 
     @Parameter(names = { "-s", "--space" }, description = "Cloud Foundry space to target", required = true)
@@ -34,7 +35,7 @@ public class JavaSample {
     @Parameter(names = { "-a", "--accessToken" }, description = "OAuth access token")
     private String accessToken;
 
-    @Parameter(names = { "-r", "--refreshToken" }, description = "OAuth access token")
+    @Parameter(names = { "-r", "--refreshToken" }, description = "OAuth refresh token")
     private String refreshToken;
 
     @Parameter(names = { "--clientID" }, description = "OAuth client ID")
@@ -46,6 +47,9 @@ public class JavaSample {
     @Parameter(names = { "-v", "--verbose" }, description = "Enable logging of requests and responses")
     private boolean verbose;
 
+    @Parameter(names = { "-d", "--debug" }, description = "Enable debug logging of requests and responses")
+    private boolean debug;
+
     public static void main(String[] args) {
         JavaSample sample = new JavaSample();
         new JCommander(sample, args);
@@ -55,10 +59,21 @@ public class JavaSample {
     private void run() {
         validateArgs();
 
+        setupDebugLogging();
+
         CloudCredentials credentials = getCloudCredentials();
         CloudFoundryClient client = getCloudFoundryClient(credentials);
 
         displayCloudInfo(client);
+    }
+
+    private void setupDebugLogging() {
+        if (debug) {
+            System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
+            System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
+            System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "DEBUG");
+            System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.wire", "ERROR");
+        }
     }
 
     private CloudCredentials getCloudCredentials() {
