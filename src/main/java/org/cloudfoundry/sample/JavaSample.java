@@ -40,6 +40,9 @@ public class JavaSample {
     @Parameter(names = { "-c", "--client" }, description = "OAuth client ID")
     private String clientID;
 
+    @Parameter(names = { "-cs", "--clientSecret"}, description = "OAuth client secret")
+    private String clientSecret;
+
     public static void main(String[] args) {
         JavaSample sample = new JavaSample();
         new JCommander(sample, args);
@@ -62,7 +65,7 @@ public class JavaSample {
             if (clientID == null) {
                 credentials = new CloudCredentials(username, password);
             } else {
-                credentials = new CloudCredentials(username, password, clientID);
+                credentials = new CloudCredentials(username, password, clientID, clientSecret);
             }
         } else if (accessToken != null && refreshToken != null) {
             DefaultOAuth2RefreshToken refresh = new DefaultOAuth2RefreshToken(refreshToken);
@@ -72,7 +75,7 @@ public class JavaSample {
             if (clientID == null) {
                 credentials = new CloudCredentials(access);
             } else {
-                credentials = new CloudCredentials(access, clientID);
+                credentials = new CloudCredentials(access, clientID, clientSecret);
             }
         } else {
             final TokensFile tokensFile = new TokensFile();
@@ -81,7 +84,7 @@ public class JavaSample {
             if (clientID == null) {
                 credentials = new CloudCredentials(token);
             } else {
-                credentials = new CloudCredentials(token, clientID);
+                credentials = new CloudCredentials(token, clientID, clientSecret);
             }
         }
 
