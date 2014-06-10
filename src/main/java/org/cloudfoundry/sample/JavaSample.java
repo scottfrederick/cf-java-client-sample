@@ -171,11 +171,13 @@ public class JavaSample {
         out("\nApplications:");
         for (CloudApplication app : client.getApplications()) {
             out(app.getName() + ":");
-            out(app.getStaging().getBuildpackUrl());
-            out(app.getStaging().getCommand());
-            out("\tServices:");
-            for (String serviceName : app.getServices()) {
-                out("\t\t" + serviceName);
+            out("\t" + app.getStaging().getBuildpackUrl());
+            out("\t" + app.getStaging().getCommand());
+            if (!app.getServices().isEmpty()) {
+                out("\tBound Services:");
+                for (String serviceName : app.getServices()) {
+                    out("\t\t" + serviceName);
+                }
             }
         }
 
@@ -183,21 +185,17 @@ public class JavaSample {
         for (CloudService service : client.getServices()) {
             out(service.getName() + ":");
             out("\t" + service.getLabel());
-            out("\t" + service.getProvider());
             out("\t" + service.getPlan());
-            out("\t" + service.getVersion());
         }
 
         out("\nService Offerings:");
         for (CloudServiceOffering offering : client.getServiceOfferings()) {
             out(offering.getLabel() + ":");
-            out("\t" + offering.getProvider());
             final String s = "\tPlans:";
             out(s);
             for (CloudServicePlan plan : offering.getCloudServicePlans()) {
                 out("\t\t" + plan.getName());
             }
-            out("\t" + offering.getVersion());
             out("\t" + offering.getDescription());
         }
     }

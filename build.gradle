@@ -1,20 +1,8 @@
 apply plugin: 'java'
 apply plugin: 'idea'
 
-sourceCompatibility = 1.6
+sourceCompatibility = 1.7
 version = '1.0'
-
-sourceSets {
-    main {
-        java {
-            srcDir 'src/main/java'
-        }
-        resources {
-            srcDir 'src/main/resources'
-            srcDir 'src/main/java'
-        }
-    }
-}
 
 repositories {
     mavenCentral()
@@ -32,11 +20,11 @@ jar {
 }
 
 dependencies {
-    compile 'org.cloudfoundry:cloudfoundry-client-lib:0.8.8.BUILD-SNAPSHOT'
+    compile 'org.cloudfoundry:cloudfoundry-client-lib:1.0.3'
     compile 'org.apache.commons:commons-lang3:3.1'
     compile 'com.beust:jcommander:1.30'
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.6'
+    gradleVersion = '1.12'
 }
