@@ -7,8 +7,8 @@ interact with a Cloud Foundry instance.
 To build the program, follow these steps:
 
 ~~~
-$ git clone https://github.com/scottfrederick/cf-java-client
-$ cd cf-java-client
+$ git clone https://github.com/scottfrederick/cf-java-client-sample
+$ cd cf-java-client-sample
 $ ./gradlew assemble
 ~~~
 
@@ -20,7 +20,7 @@ You can authenticate to Cloud Foundry with a username and password by passing th
 target when the program is launched:
 
 ~~~
-$ java -jar build/libs/cf-java-client-1.0.jar -t https://api.run.pivotal.io -s development -u <username> -p <password>
+$ java -jar build/libs/cf-java-client-sample-1.0.jar -t https://api.run.pivotal.io -s development -u <username> -p <password>
 ~~~
 
 ## Authenticating with OAuth tokens
@@ -30,7 +30,7 @@ an OAuth access token and refresh token and a client ID attached to the tokens, 
 program:
 
 ~~~
-$ java -jar build/libs/cf-java-client-1.0.jar -t https://api.run.pivotal.io -s development -c <client ID> -a <access token> -r <refresh token>
+$ java -jar build/libs/cf-java-client-sample-1.0.jar -t https://api.run.pivotal.io -s development -c <client ID> -a <access token> -r <refresh token>
 ~~~
 
 ## Authenticating with saved tokens
@@ -45,6 +45,6 @@ After targeting and logging in with `cf`, you can run the program and target a s
 from  `~/.cf/tokens.yml`:
 
 ~~~
-$ java -jar build/libs/cf-java-client-1.0.jar -t https://api.run.pivotal.io -s development
+$ java -jar build/libs/cf-java-client-sample-1.0.jar -t https://api.run.pivotal.io -s development
 ~~~
 
