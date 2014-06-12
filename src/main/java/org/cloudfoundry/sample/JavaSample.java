@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.domain.*;
 import org.cloudfoundry.client.lib.tokens.TokensFile;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
@@ -38,11 +39,14 @@ public class JavaSample {
     @Parameter(names = { "-r", "--refreshToken" }, description = "OAuth refresh token")
     private String refreshToken;
 
-    @Parameter(names = { "--clientID" }, description = "OAuth client ID")
+    @Parameter(names = { "-ci", "--clientID" }, description = "OAuth client ID")
     private String clientID;
 
-    @Parameter(names = { "--clientSecret" }, description = "OAuth client secret")
+    @Parameter(names = { "-cs", "--clientSecret" }, description = "OAuth client secret")
     private String clientSecret;
+
+    @Parameter(names = { "-tc", "--trustSelfSignedCerts" }, description = "Trust self-signed SSL certificates")
+    private boolean trustSelfSignedCerts;
 
     @Parameter(names = { "-v", "--verbose" }, description = "Enable logging of requests and responses")
     private boolean verbose;
@@ -112,7 +116,7 @@ public class JavaSample {
     private CloudFoundryClient getCloudFoundryClient(CloudCredentials credentials) {
         out("Connecting to Cloud Foundry target: " + target);
 
-        CloudFoundryClient client = new CloudFoundryClient(credentials, getTargetURL(target));
+        CloudFoundryClient client = new CloudFoundryClient(credentials, getTargetURL(target), (HttpProxyConfiguration) null, trustSelfSignedCerts);
 
         if (verbose) {
             client.registerRestLogListener(new SampleRestLogCallback());
